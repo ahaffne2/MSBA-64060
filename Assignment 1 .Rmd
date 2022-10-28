@@ -1,0 +1,123 @@
+---
+title: "Assignment 1"
+output:
+  word_document: default
+---
+#QA1
+#The main purpose of regularization is to simplify models in order to improve their performance. Keeping it as simple as possible decreases the chance of a model being to complex and struggling to generalize. 
+
+#QA2
+#A loss function is a function that is trying to minimize an objective in predictive modeling. An example of a loss the function for regression models is root mean square error, RMSE, or the mean absolute error MAE. A example of a common loss function for classification models is log loss, ROC and AUC.
+
+#QA3
+#You can’t fully trust this model because of the chance there may be overfitting. A smaller more specific data setDue to a large number of hyperparameters is the perfect candidate for overfitting. The fact that the training error is low also makes me consider the idea of overfitting because typically a lower training model means themodel is probably more complex. There is a greater likelihood that the model could lose its ability to generalize.
+
+#Q4
+#The lambda parameter controls the amount of regularization of a model. The lambda parameter balances the minimization and error of a model to find an optimal solution. In a Lasso regression model the lambda parameter minimize the absolute sum values of coefficients while in Ridge Regression models minimizes the sum square of the error terms. 
+
+
+```{r}
+library(ISLR)  
+library(dplyr)  
+library(glmnet)
+library(caret) 
+
+#Problem QB1
+
+Carseats_Filtered <- Carseats %>% select("Sales", "Price","Advertising","Population","Age","Income","Education") 
+preProcess(Carseats_Filtered)
+
+y <- Carseats$Sales
+x <- as.matrix(Carseats[, c('Price', 'Advertising', 'Population', 'Age', 'Income', 'Education')])
+#Fit Models 
+
+fit = glmnet(x,y)
+plot(fit)
+
+```
+
+```{r}
+print(fit)
+
+```
+```{r}
+coef(fit, s=1)
+```
+```{r}
+#Predictions
+nx = matrix(rnorm(12*6),12,6)
+predict(fit,newx=nx,s=c(.1,.05))
+```
+
+```{r}
+#Cross Validation
+cvfit = cv.glmnet(x,y)
+plot(cvfit)
+```
+```{r}
+cvfit$lambda.min
+```
+```{r}
+cvfit$lambda.1se
+```
+```{r}
+coef(cvfit, s = "lambda.min")
+```
+```{r}
+predict(cvfit, newx = x[1:6,], s = "lambda.min")
+```
+
+```{r}
+cvfit = cv.glmnet(x, y, type.measure = "mae", nfolds = 5)
+coef(cvfit, s = "lambda.min")
+```
+```{r}
+#Build Lasso 
+fit.lasso <- glmnet(x, y, alpha = 1)
+plot(fit.lasso, xvar = "lambda")
+```
+```{r}
+plot(cv.glmnet(x, y, alpha=1))
+```
+```{r}
+#Question 2
+ 
+coef(cvfit, s = "lambda.min")
+```
+```{r}
+predict(cvfit, newx = x[1:6,], s ="lambda.min")
+# The coefficient for the price in the best model is 8.2777. 
+```
+```{r}
+#Question 3
+coef(fit, s=1)
+```
+```{r}
+
+coef(fit,s=0.01)
+```
+```{r}
+coef(fit, s=0.1)
+```
+#All 6 attributes stay in the model if the lambda is set to 0.01. Where as only 5 stayin the model if the lambda is set to 0.10. I would expect less variables to stay in the model as you increase the lambda. 
+
+```{r}
+#Question 4
+fit.elnet <- glmnet(x,y, alpha = 0.6)
+plot(fit.elnet, xvar = "lambda")
+```
+```{r}
+plot(cv.glmnet(x,y,alpha=.06))
+```
+```{r}
+print(fit.elnet)
+```
+# The Optimal lambbda is 0.00654 in this model. 
+
+```{r}
+for (a in seq(0,1, by=0.1)) {
+  cvfit=cv.glmnet(x, y, alpha=a)
+  print(paste0("alpha is ", a, " and best MSE is " ,min(cvfit$cvm)))
+} 
+```
+
